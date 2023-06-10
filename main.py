@@ -38,16 +38,20 @@ def draw_subtree(ax, node: tree.TreeNode, s: int, color: str) -> None:
     if node.right != None:
         draw_subtree(ax, node.right, s + 1, color=colors[6])
     
-    if np.random.choice([True] + 20*[False]) and count < 15:
+    if np.random.choice([True] + 20*[False]) and count < 1:
         c = np.random.choice(colors)
         rect = Rectangle((max(-6, node.xmin), max(node.ymin, -6)),
                          min(node.xmax, 7) - max(node.xmin, -6),
                          min(node.ymax, 7) - max(node.ymin, -6),
                          facecolor=c,
                          alpha=0.5)
-        ax.scatter(node.x, node.y, color=c, linewidth=1.3)
+        ax.scatter(node.x, node.y, color=c, linewidth=1)
         ax.add_patch(rect)
         count += 1
+        _, nns = tree.nearest_neighbors([node.x, node.y], tree.root, k=4)
+        for nn in list(nns):
+            ax.scatter(nn.x, nn.y, color='red', linewidth=1)
+        
 
 def draw(ax, tree: tree.Tree) -> None:
     draw_subtree(ax, tree.root, 0, colors[6])

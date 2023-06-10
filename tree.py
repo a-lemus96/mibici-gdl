@@ -1,3 +1,5 @@
+# stdlib modules
+from collections import deque
 import math
 from typing import List, Tuple
 
@@ -238,49 +240,67 @@ class Tree:
         xin_reg = (xmin <= xp and xp <= xmax) # is xp in [xmin, xmax]?
         yin_reg = (ymin <= yp and yp <= ymax) # is yp in [ymin, ymax]?
 
-        if xin_reg:
+        if xin_reg and yin_reg:
+            dist_x = min(np.abs(yp - ymin), np.abs(yp - ymax))
+            dist_y = min(np.abs(xp - xmin), np.abs(xp - xmax))
+            dist_min = min(dist_x, dist_y)
+        elif xin_reg:
             dist_min = min(np.abs(yp - ymin), np.abs(yp - ymax))
         elif yin_reg:
             dist_min = min(np.abs(xp - xmin), np.abs(xp - xmax))
         else: # point does not intersect neither [xmin, xmax] nor [ymin, ymax]
-            vertices = [[xmin, ymax], [xmax, ymax], 
+            vertices = [[xmin, ymax], [xmax, ymax],
                         [xmin, ymin], [xmax, ymin]]
             
-            dists = [self.__dist(v) for v in vertices]
+            dists = [self.__dist(v, point) for v in vertices]
             dist_min = min(dists)
 
         return dist_min
 
-    def nearest_neighbor(
+    def nearest_neighbors(
             self, 
             query: List[float], 
             node: TreeNode,
-            dmin: int = math.inf,
-            nn: TreeNode = None) -> TreeNode:
-        """Given a query node, find nearest neighbor among the subtree nodes.
+            k: int = 1,
+            dmins: deque = None,
+            nns: deque = None) -> List[TreeNode]:
+        """Given a query node, find k nearest neighbor among the subtree nodes.
         ------------------------------------------------------------------------
         Args:
             query: list of query coords
+            k: number of nearest neighbors to find
             node: subtree node
-            dmin: current nearest distance
-            nn: current nearest neighbor node
+            dists: queue with distances for k smallest distances so far
+            nns: current queue with k nearest neighbor nodes
         Returns:
             nearest: nearest neighbor to query node in subtree rooted at node"""
+        if dmins is None:
+            dmins = deque([math.inf], maxlen=k)
+        if nns is None:
+            nns = deque([None], maxlen=k)
         # compute distance from query to node and update dmin if applicable
         xq, yq = query
-        if node != None:
-            d = self.__dist([xq, yq], [node.x, node.y])
-            if d < dmin:
-                dmin = d
-                nn = node
+        if node is not None:
+            dnode = self.__dist(query, [node.x, node.y])
+            update = dnode < np.array(dmins)
+            if update.any() and dnode > 0:
+                pos = np.argmax(update)
+                if len(dmins) == dmins.maxlen:
+                    dmins.pop()
+                    nns.pop()
+                dmins.insert(pos, dnode)
+                nns.insert(pos, node)
 
             dleft = self.__min_dist_region(query, node.left)
-            if dleft < dmin: # explore left subtree
-                dmin, nn = self.nearest_neighbor(query, node.left,
-                                                 dmin=dmin, nn=nn)
-            dright = self.__min_dist_region(query, node.right)
-            if dright < dmin: # explore left subtree
-                dmin, nn = self.nearest_neighbor(query, node.right,
-                                                 dmin=dmin, nn=nn)
+            explore_left = dleft < np.array(dmins)
+            if explore_left.any():
+                dmins, nns = self.nearest_neighbors(query, node.left, k=k,
+                                                    dmins=dmins, nns=nns)
 
-        return dmin, nn
+            dright = self.__min_dist_region(query, node.right)
+            explore_right = dright < np.array(dmins)
+            if explore_right.any(): # explore right subtree
+                dmins, nns = self.nearest_neighbors(query, node.right, k=k,
+                                                    dmins=dmins, nns=nns)
+
+        return dmins, nns
