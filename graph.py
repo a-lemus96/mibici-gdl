@@ -1,5 +1,7 @@
 # stdlib modules
-from typing import List
+import math
+from queue import PriorityQueue
+from typing import Any, List
 
 # third-party modules
 import networkx as nx
@@ -29,6 +31,49 @@ def build_graph(
 
     return G
 
+def get_path(G: Graph, node_id: Any):
+    """"""
+    parent = G.nodes[node_id]['pred']
+    if parent is None:
+        return [node_id]
+    path = get_path(G, parent) + [node_id]
+    
+    return path
+
+def dijkstra_path(G: Graph, p_id: Any, q_id: Any) -> Graph:
+    """"""
+    # initialize node attributes
+    for node_id in list(G.nodes):
+        G.nodes[node_id]['d'] = math.inf
+        G.nodes[node_id]['pred'] = None
+        
+    G.nodes[p_id]['d'] = 0.
+
+    S = set() # initialize set of path vertices
+    Q = PriorityQueue()
+    Q.put((G.nodes[p_id]['d'], p_id)) # insert root into Q
+    while not Q.empty():
+        _, u = Q.get()
+        S.add(u)
+        for v in G.neighbors(u):
+            if v not in S:
+                # retrieve edge weight
+                edge_data = G.get_edge_data(u, v)
+                w = edge_data['weight']
+                # perform edge relaxation
+                if G.nodes[v]['d'] > G.nodes[u]['d'] + w:
+                    G.nodes[v]['d'] = G.nodes[u]['d'] + w
+                    G.nodes[v]['pred'] = u
+                    Q.put((G.nodes[v]['d'], v))
+
+    # compute path
+    path = get_path(G, q_id)
+    if path[0] != p_id:
+        raise RuntimeError(f'There is no path between nodes {p_id} and {q_id}')
+
+    return path
+
+
 def path_plan(
         ids: List[int],
         p: List[float],
@@ -46,5 +91,6 @@ def path_plan(
     dists_q, near_q = T.nearest_neighbors(q, T.root, k=k)
     edges = [(id_q, nn.id, d) for nn, d in zip(near_q, dists_q)]
     G.add_weighted_edges_from(edges)
+    path = dijkstra_path(G, id_p, id_q)
 
-    return G
+    return G, path
