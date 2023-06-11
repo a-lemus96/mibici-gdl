@@ -11,6 +11,7 @@ import numpy as np
 class TreeNode:
     def __init__(
             self,
+            node_id: int,
             x: float,
             y: float,
             split_x: bool = True):
@@ -18,9 +19,11 @@ class TreeNode:
         and splitting direction.
         -----------------------------------------------------------------------
         Args:
+            node_id: node's id
             x: x-coordinate
             y: y-coordinate
             split_x: splitting direction. x if True, y otherwise"""
+        self.id = node_id
         # spatial point coords
         self.x = x
         self.y = y
@@ -44,6 +47,7 @@ class TreeNode:
 class Tree:
     def __init__(
             self, 
+            ids: List[int],
             xs: List[float], 
             ys: List[float]):
         """Constructor method. Builds a variance dependent 2d-tree using list of 
@@ -60,7 +64,7 @@ class Tree:
         split_x = True if x_var > y_var else False
         
         # build tree recursively
-        self.root = self.__build_tree(xs, ys, ix_sort, iy_sort, split_x)
+        self.root = self.__build_tree(ids, xs, ys, ix_sort, iy_sort, split_x)
 
     def print(self):
         """Printing method starting at tree's root.
@@ -133,6 +137,7 @@ class Tree:
 
     def __build_tree(
             self,
+            ids: List[int],
             xs: List[float],
             ys: List[float],
             ix: List[int],
@@ -154,7 +159,7 @@ class Tree:
         
         if split_x: # split along x-axis
             # use middle node along x-axis to partition space
-            node = TreeNode(xs[ix[mid]], ys[ix[mid]], True)
+            node = TreeNode(ids[ix[mid]], xs[ix[mid]], ys[ix[mid]], True)
             if parent != None:
                 # compute region's boundaries
                 bounds = self.__get_bounds(node, parent)
@@ -168,7 +173,7 @@ class Tree:
                 x_var, y_var = np.var(xs[ix[:mid]]), np.var(ys[ix[:mid]])
                 split_x = True if x_var > y_var else False
                 # build left-subtree
-                node.left = self.__build_tree(xs, ys, ix[:mid], sub_iy,
+                node.left = self.__build_tree(ids, xs, ys, ix[:mid], sub_iy,
                                               split_x, node)
 
             if mid + 1 < size:
@@ -176,11 +181,11 @@ class Tree:
                 x_var, y_var = np.var(xs[ix[mid+1:]]), np.var(ys[ix[mid+1:]])
                 split_x = True if x_var > y_var else False
                 # build right-subtree
-                node.right = self.__build_tree(xs, ys, ix[mid+1:], sub_iy,
-                                              split_x, node)
+                node.right = self.__build_tree(ids, xs, ys, ix[mid+1:], sub_iy,
+                                               split_x, node)
 
         else: # split along y-axis
-            node = TreeNode(xs[iy[mid]], ys[iy[mid]], False)
+            node = TreeNode(ids[iy[mid]], xs[iy[mid]], ys[iy[mid]], False)
             if parent != None:
                 bounds = self.__get_bounds(node, parent)
                 node.xmin, node.xmax = bounds[:2]
@@ -192,7 +197,7 @@ class Tree:
                 x_var, y_var = np.var(xs[iy[:mid]]), np.var(ys[iy[:mid]])
                 split_x = True if x_var > y_var else False
                 # build left-subtree
-                node.left = self.__build_tree(xs, ys, sub_ix, iy[:mid],
+                node.left = self.__build_tree(ids, xs, ys, sub_ix, iy[:mid],
                                               split_x, node)
 
             if mid + 1 < size:
@@ -201,7 +206,7 @@ class Tree:
                 x_var, y_var = np.var(xs[iy[mid+1:]]), np.var(ys[iy[mid+1:]])
                 split_x = True if x_var > y_var else False
                 # build right-subtree
-                node.right = self.__build_tree(xs, ys, sub_ix, iy[mid+1:],
+                node.right = self.__build_tree(ids, xs, ys, sub_ix, iy[mid+1:],
                                               split_x, node)
 
         # once it finishes recursive calls, return subtree's root node

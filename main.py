@@ -2,11 +2,13 @@
 import argparse
 
 # third-party modules
+import networkx as nx
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle
 
 # local modules
+import graph
 import tree
 import utils
 
@@ -57,8 +59,15 @@ def draw(ax, tree: tree.Tree) -> None:
     draw_subtree(ax, tree.root, 0, colors[6])
 
 positions = utils.load_ecobici(args.fname) # load station xy coords
-tree = tree.Tree(positions['x'], positions['y'])
+tree = tree.Tree(positions['id'], positions['x'], positions['y'])
 fig, ax = plt.subplots(figsize=(9,9))
-ax.scatter(positions['x'], positions['y'], linewidth=0.05, color='green')
-draw(ax, tree)
+#ax.scatter(positions['x'], positions['y'], linewidth=0.05, color='green')
+G = graph.build_graph(positions['id'], positions['x'], positions['y'], k=9)
+glocs = {node_id: (x, y) for node_id, x, y in zip(positions['id'],
+                                                  positions['x'],
+                                                  positions['y'])}
+#print(glocs)
+#draw(ax, tree)
+nx.draw(G, pos=glocs, ax=ax, node_size=25, node_color='green')
+print(nx.number_connected_components(G))
 plt.show()
