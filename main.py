@@ -58,16 +58,28 @@ def draw_subtree(ax, node: tree.TreeNode, s: int, color: str) -> None:
 def draw(ax, tree: tree.Tree) -> None:
     draw_subtree(ax, tree.root, 0, colors[6])
 
+K=3
 positions = utils.load_ecobici(args.fname) # load station xy coords
 tree = tree.Tree(positions['id'], positions['x'], positions['y'])
 fig, ax = plt.subplots(figsize=(9,9))
 #ax.scatter(positions['x'], positions['y'], linewidth=0.05, color='green')
-G = graph.build_graph(positions['id'], positions['x'], positions['y'], k=9)
+G = graph.build_graph(positions['id'], positions['x'], positions['y'], k=K)
 glocs = {node_id: (x, y) for node_id, x, y in zip(positions['id'],
                                                   positions['x'],
                                                   positions['y'])}
 #print(glocs)
 #draw(ax, tree)
-nx.draw(G, pos=glocs, ax=ax, node_size=25, node_color='green')
-print(nx.number_connected_components(G))
+points = np.random.uniform(-6, 7, size=(2, 2))
+p, q = tuple(map(tuple, points))
+glocs['p'] = (p)
+glocs['q'] = (q)
+print(p)
+print(q)
+G = graph.path_plan(ids=['p', 'q'], p=p, q=q, G=G, T=tree, k=K)
+path = nx.dijkstra_path(G, 'p', 'q')
+colors = ['blue' if node == 'p' or node == 'q' else 'green' for node in G.nodes()]
+nx.draw(G, pos=glocs, ax=ax, node_size=25, node_color=colors)
+path_edges = list(zip(path, path[1:]))
+nx.draw_networkx_nodes(G, glocs, nodelist=path, node_color='r', node_size=25)
+nx.draw_networkx_edges(G, glocs, edgelist=path_edges, edge_color='r', width=1)
 plt.show()
