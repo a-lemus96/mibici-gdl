@@ -107,24 +107,28 @@ def dijkstra_path(G: Graph, p_id: Any, q_id: Any) -> List[Any]:
 
     return path
 
-
-def path_plan(
-        ids: List[int],
-        p: List[float],
-        q: List[float],
-        G: Graph,
-        T: Tree,
-        k: int = 3):
+def connect_query_points(G, T, ids, p, q, k=3):
     """"""
     id_p, id_q = ids
     G.add_node(id_p)
     dists_p, near_p = T.nearest_neighbors(p, T.root, k=k)
     edges = [(id_p, nn.id, d) for nn, d in zip(near_p, dists_p)]
     G.add_weighted_edges_from(edges)
-
     dists_q, near_q = T.nearest_neighbors(q, T.root, k=k)
     edges = [(id_q, nn.id, d) for nn, d in zip(near_q, dists_q)]
     G.add_weighted_edges_from(edges)
-    path = dijkstra_path(G, id_p, id_q)
+
+    return G
+
+def path_plan(
+        id_p: List[float],
+        id_q: List[float],
+        G: Graph,
+        method: str = 'dijkstra'):
+    """"""
+    if method == 'dijkstra':
+        path = dijkstra_path(G, id_p, id_q)
+    else:
+        path = bellman_ford_path(G, id_p, id_q)
 
     return G, path
